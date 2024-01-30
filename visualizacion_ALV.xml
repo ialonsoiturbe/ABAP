@@ -1,0 +1,212 @@
+REPORT zmm_r_vuelos_alv_04.
+
+INCLUDE zmm_i_vuelos_alv_04_c01."Clases
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS m_hot_spot FOR EVENT  hotspot_click OF  cl_gui_alv_grid
+      IMPORTING e_row_id e_column_id es_row_no.
+ENDCLASS.
+
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD m_hot_spot.
+    IF e_column_id EQ 'CARRID'.
+CALL FUNCTION 'POPUP_TO_INFORM'
+  EXPORTING
+    titel         = 'Información de la compañía aérea'
+    txt1          = 'Texto para carrid 2'
+    txt2          = 'Texto para carrid 3'
+*   TXT3          = ' '
+*   TXT4          = ' '
+          .
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+INCLUDE zmm_i_vuelos_alv_04_top. "Datos
+TABLES spfli.
+TABLES t005t.
+
+DATA: go_alv       TYPE REF TO cl_gui_alv_grid,
+      go_alv2      TYPE REF TO cl_salv_table,
+      go_container TYPE REF TO cl_gui_custom_container,
+      gt_data      TYPE TABLE OF spfli,
+      lo_sorts     TYPE REF TO cl_salv_sorts,
+      go_handler   TYPE REF TO lcl_handler,
+      gv_ok_code   TYPE sy-ucomm.
+
+TYPES: BEGIN OF gty_s_vuelos,
+
+         carrid    TYPE s_carr_id,
+         countryfr TYPE land1,
+         land1fr   TYPE landx,
+         cityfrom  TYPE s_from_cit,
+         countryto TYPE land1,
+         land1to   TYPE landx,
+         cityto    TYPE s_to_city,
+         deptime   TYPE s_dep_time,
+
+       END OF gty_s_vuelos.
+
+DATA gt_vuelos TYPE TABLE OF gty_s_vuelos.
+
+INCLUDE zmm_i_vuelos_alv_04_s01. "Selección de datos
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-b01.
+SELECT-OPTIONS so_pais FOR spfli-countryfr.
+SELECTION-SCREEN END OF BLOCK b1.
+
+INCLUDE zmm_i_vuelos_alv_04_o01. "Modulos PBO
+*&---------------------------------------------------------------------*
+*&      Module  M_SET_STATUS  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE m_crear_alv OUTPUT.
+  PERFORM f_mostrar_alv.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  M_SET_STATUS  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE m_set_status OUTPUT.
+  SET PF-STATUS 'ZMM_STATUS_04'.
+  SET TITLEBAR 'ZMM_TITULO_04'.
+ENDMODULE.
+
+INCLUDE zmm_r_vuelos_alv_04_f_mostrf01."Subrutinas
+FORM f_mostrar_alv .
+
+
+  DATA: lt_fieldcat         TYPE lvc_t_fcat,
+        ls_fieldcat         TYPE lvc_s_fcat,
+        ls_layout           TYPE lvc_s_layo,
+        ls_variant TYPE  disvariant,
+        ls_sort             TYPE lvc_s_sort,
+        lt_sort             TYPE lvc_t_sort.
+
+  ls_sort-fieldname = 'CARRID'.
+  ls_sort-down = 'X'.
+  APPEND ls_sort TO lt_sort.
+
+  ls_layout-zebra = 'X'.
+  ls_layout-cwidth_opt = 'X'.
+  ls_fieldcat-fieldname = 'CARRID'.
+  ls_fieldcat-hotspot = 'X'.
+  ls_fieldcat-key = 'X'.
+  ls_fieldcat-hotspot = 'X'.
+  ls_fieldcat-scrtext_l = 'Código compañía'.
+  ls_fieldcat-scrtext_m = 'Código compañía'.
+  ls_fieldcat-scrtext_s = 'Código compañía'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+
+  ls_fieldcat-fieldname = 'COUNTRYFR'.
+  ls_fieldcat-key = ''.
+  ls_fieldcat-hotspot = ''.
+  ls_fieldcat-scrtext_l = 'País de origen'.
+  ls_fieldcat-scrtext_m = 'País de origen'.
+  ls_fieldcat-scrtext_s = 'País de origen'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'LAND1FR'.
+  ls_fieldcat-scrtext_l = 'Aeropuerto de origen'.
+  ls_fieldcat-scrtext_m = 'Aeropuerto de origen'.
+  ls_fieldcat-scrtext_s = 'Aeropuerto de origen'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'CITYFROM'.
+  ls_fieldcat-scrtext_l = 'Ciudad de origen'.
+  ls_fieldcat-scrtext_m = 'Ciudad de destino'.
+  ls_fieldcat-scrtext_s = 'Ciudad de destino'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'COUNTRYTO'.
+  ls_fieldcat-scrtext_l = 'País de destino'.
+  ls_fieldcat-scrtext_m = 'País de destino'.
+  ls_fieldcat-scrtext_s = 'País de destino'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'LAND1TO'.
+  ls_fieldcat-scrtext_l = 'Aeropuerto de destino'.
+  ls_fieldcat-scrtext_m = 'Aeropuerto de destino'.
+  ls_fieldcat-scrtext_s = 'Aeropuerto de destino'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'CITYTO'.
+  ls_fieldcat-scrtext_l = 'Ciudad de destino'.
+  ls_fieldcat-scrtext_m = 'Ciudad de destino'.
+  ls_fieldcat-scrtext_s = 'Ciudad de destino'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  ls_fieldcat-fieldname = 'DEPTIME'.
+  ls_fieldcat-scrtext_l = 'Hora de salida'.
+  ls_fieldcat-scrtext_m = 'Hora de salida'.
+  ls_fieldcat-scrtext_s = 'Hora de salida'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+
+  IF go_container IS INITIAL.
+
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'CONTAINER'.
+
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_container.
+  ENDIF.
+
+  CREATE OBJECT go_handler.
+  SET HANDLER go_handler->m_hot_spot FOR go_alv.
+
+ls_variant-report = 'ZMM_R_VUELOS_ALV_04'.
+
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout       = ls_layout
+      is_variant      = ls_variant
+      i_save          = 'X'
+    CHANGING
+      it_fieldcatalog = lt_fieldcat
+      it_sort         = lt_sort
+      it_outtab       = gt_vuelos.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  F_SELECCION_DATOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM f_seleccion_datos.
+*seleccionamos y adjudicamos los datos************
+  SELECT spfli~carrid countryfr t1~landx AS land1fr cityfrom countryto t2~landx AS land1to cityto deptime
+    FROM spfli
+    INNER JOIN t005t AS t1 ON spfli~countryfr = t1~land1
+    INNER JOIN t005t AS t2 ON spfli~countryto = t2~land1
+    INTO TABLE gt_vuelos
+    WHERE carrid IN so_pais
+    AND t1~spras EQ sy-langu
+    AND t2~spras EQ sy-langu.
+
+  IF sy-subrc NE 0.
+    MESSAGE 'No se encuentran los datos' TYPE 'E'.
+  ENDIF.
+ENDFORM.
+
+
+FORM f_user_command .
+
+  CASE gv_ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'EXIT'.
+      LEAVE TO SCREEN 0.
+    WHEN 'CANCEL'.
+      LEAVE TO SCREEN 0.
+
+  ENDCASE.
+
+ENDFORM.
