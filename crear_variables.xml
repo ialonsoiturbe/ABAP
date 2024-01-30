@@ -1,0 +1,66 @@
+REPORT zmm_r_variables_04.
+
+"Vamos a ver diferentes formas de declarar variables:
+
+"TYPE te declara el tipo de dato pero no los escribe
+
+"Tipo estructura:
+TYPES: BEGIN OF gty_s_alumno,
+         nombre    TYPE zmm_e_nombre_04,
+         apellido1 TYPE zmm_e_apellido1_04,
+         apellido2 TYPE zmm_e_apellido2_04,
+       END OF gty_s_alumno.
+
+CONSTANTS gc_color(20) TYPE c VALUE 'Amarillo'.
+
+"Tipo c es tipo char
+DATA gv_nombre_persona TYPE c LENGTH 20.
+DATA gv_nombre_persona_2(20) TYPE c.
+DATA gv_nombre_persona_3 TYPE zmm_e_nombre_01 VALUE 'Inés'.
+
+DATA: gv_nombre_persona_4 TYPE zmm_t_alumnos_04-nombre,
+      gv_nombre_persona_5 LIKE gv_nombre_persona,
+      gs_alumno           TYPE gty_s_alumno,
+      gs_alumno2          TYPE zmm_s_alumnos_04,
+      gs_alumno3          LIKE gs_alumno,
+      gt_r_nombres        TYPE RANGE OF zmm_e_nombre_01,
+      gv_contador         TYPE i.
+
+
+gs_alumno-nombre = gv_nombre_persona_3.
+gs_alumno-apellido1 = 'Alonso'.
+gs_alumno-apellido2 = 'Iturbe'.
+
+
+"Tipo d es tipo fecha
+
+DATA: gv_fecha  TYPE d,
+      gv_fecha2 TYPE datum,
+      gv_fecha3 TYPE zmm_e_fecha_inicio_01.
+
+"Se puede crear un fs de cualquier tipo
+"Cuando asignas un fs a una variable adopta el tipo de la variable
+FIELD-SYMBOLS <gv_persona> TYPE zmm_e_nombre_01.
+
+"Necesario asignarlo ya que si no al ejecutar no va a localizar el fs
+ASSIGN gv_nombre_persona TO <gv_persona>.
+
+"Para comprobar y que sólo ejecute al estar asignado hacemos:
+IF <gv_persona> IS ASSIGNED.
+  WRITE: <gv_persona>.
+ENDIF.
+
+UNASSIGN <gv_persona>.
+
+"Sumar
+add 1 to gv_contador.
+
+"Restar
+SUBTRACT 4 FROM gv_contador.
+
+"Mover
+move gv_nombre_persona to gv_nombre_persona_3.
+gv_nombre_persona_4 = gv_nombre_persona_5.
+
+
+BREAK us_for_04.
