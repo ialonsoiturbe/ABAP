@@ -1,0 +1,99 @@
+REPORT zmm_r_chn_matri_04.
+
+TABLES: zmm_t_alumnos_04.
+
+INCLUDE zmm_i_chn_matri_04. "Datos Maestros debería terminar en top
+*comenzamos creando la estructura***********************************
+TYPES: BEGIN OF gty_s_alumno,
+         codigo         TYPE zmm_e_cod_alumno_04,
+         nombre         TYPE zmm_e_nombre_04,
+         apellido1      TYPE zmm_e_apellido1_04,
+         apellido2      TYPE zmm_e_apellido2_04,
+         pais           TYPE land1,
+         pago_matricula TYPE bprei,
+         ktext          TYPE ktext_curt,
+         landx          TYPE landx,
+       END OF gty_s_alumno.
+
+*Definimos los datos que utilizaremos*******************************
+DATA: gs_alumno TYPE gty_s_alumno,
+      gt_alumno TYPE TABLE OF gty_s_alumno,
+      gv_text   TYPE string.
+INCLUDE zmm_i_chn_matri_04_s01. "Pantalla de selección
+
+*Primer bloque para el alumno***************************************
+selection-screen BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+
+SELECT-OPTIONS so_cod FOR zmm_t_alumnos_04-cod_alumno.
+SELECT-OPTIONS so_name FOR zmm_t_alumnos_04-nombre.
+SELECT-OPTIONS so_ape1 FOR zmm_t_alumnos_04-apellido1.
+SELECT-OPTIONS so_ape2 FOR zmm_t_alumnos_04-apellido2.
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+*Segundo bloque para la cuota****************************************
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
+
+PARAMETERS: pa_cuota TYPE bprei,
+            pa_check TYPE c AS CHECKBOX.
+
+SELECTION-SCREEN END OF BLOCK b2.
+
+INCLUDE zmm_i_chn_matri_04_f01. "Subrutinas
+*Definimos las subrutinas*******************************************
+FORM f_validacion.
+  IF pa_check EQ 'X'.
+    IF pa_cuota IS NOT INITIAL.
+      MESSAGE 'No se ha seleccionado el pago' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+
+FORM f_proceso.
+  IF pa_check NE 'X'.
+    UPDATE zmm_t_alumnos_04 SET pago_matricula = pa_cuota WHERE cod_alumno IN so_cod.
+    IF sy-subrc NE 0.
+      MESSAGE 'Los datos no se han actualizado correctamente' TYPE 'E'.
+    ELSE.
+      MESSAGE 'Se debe indicar el pago' TYPE 'E'.
+    ENDIF.
+  ELSE.
+    UPDATE zmm_t_alumnos_04 SET pago_matricula = '' WHERE cod_alumno IN so_cod.
+    IF sy-subrc NE 0.
+      MESSAGE 'Los datos no se han borrado correctamente' TYPE 'E'.
+    ELSE.
+      MESSAGE 'No se ha podido actalizar' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+
+FORM f_seleccion_datos.
+*Selecciono los datos para hacer el loop****************************
+  SELECT nombre apellido1 apellido2 landx pago_matricula ktext
+    FROM zmm_t_alumnos_04
+    INNER JOIN tcurt ON zmm_t_alumnos_04~moneda EQ tcurt~waers
+    INNER JOIN t005t ON zmm_t_alumnos_04~pais EQ t005t~land1
+   INTO TABLE gt_alumno
+    WHERE cod_alumno IN so_cod
+    AND t005t~spras EQ sy-langu
+    AND tcurt~spras EQ sy-langu.
+ENDFORM.
+
+FORM f_loop.
+*Mostramos datos****************************************************
+  LOOP AT gt_alumno INTO gs_alumno.
+    CONCATENATE gs_alumno-nombre gs_alumno-apellido1 gs_alumno-apellido2 gs_alumno-pais INTO gv_text SEPARATED BY space.
+    CONDENSE gv_text.
+    WRITE:/ gv_text.
+  ENDLOOP.
+ENDFORM.
+
+INCLUDE zmm_i_chn_matri_04_t01. "Eventos
+AT SELECTION-SCREEN.
+  PERFORM f_validacion.
+
+
+START-OF-SELECTION.
+  PERFORM f_proceso.
+  PERFORM f_seleccion_datos.
+  PERFORM f_loop.
