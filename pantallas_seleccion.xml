@@ -1,0 +1,67 @@
+REPORT zmm_r_imprimir_nombres2_04.
+
+TABLES zmm_t_alumnos_04.
+
+
+*Comenzamos creando la estructura****************************
+TYPES: BEGIN OF lty_s_alumno,
+         nombre         TYPE zmm_e_nombre_04,
+         apellido1      TYPE zmm_e_apellido1_04,
+         apellido2      TYPE zmm_e_apellido2_04,
+         codigo         TYPE zmm_e_cod_alumno_04,
+         pais           TYPE land1,
+         pago_matricula TYPE bprei,
+
+       END OF lty_s_alumno.
+
+
+*Definimos los datos que utilizaremos**************************
+DATA: lv_text   TYPE string,
+      lv_text2  TYPE string,
+      ls_alumno TYPE lty_s_alumno.
+
+
+*Primer bloque para el país************************************
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+
+SELECT-OPTIONS so_cod FOR ls_alumno-codigo OBLIGATORY.
+PARAMETERS pa_check TYPE c AS CHECKBOX.
+
+SELECT-OPTIONS so_pais FOR ls_alumno-pais.
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+*seleccionamos y movemos los datos a ls_alumno*****************
+SELECT nombre apellido1 apellido2
+  FROM zmm_t_alumnos_04
+  INTO ls_alumno
+  WHERE cod_alumno IN so_cod.
+
+  CONCATENATE ls_alumno-nombre ls_alumno-apellido1 ls_alumno-apellido2 INTO lv_text SEPARATED BY space.
+  CONDENSE lv_text.
+  WRITE lv_text.
+ENDSELECT.
+
+
+IF sy-subrc <> 0.
+  WRITE: TEXT-t01.
+ENDIF.
+
+
+*seleccionamos los pagos y hacemos sumatoria*******************
+
+SELECT pais SUM( pago_matricula ) AS pago_matricula
+      FROM zmm_t_alumnos_04
+      INTO CORRESPONDING FIELDS OF ls_alumno
+      WHERE pais IN so_pais GROUP BY pais.
+  WRITE:/ ls_alumno-pais, ls_alumno-pago_matricula.
+ENDSELECT.
+IF sy-subrc <> 0.
+  WRITE: TEXT-t01.
+ENDIF.
+
+AT SELECTION-SCREEN.
+  IF pa_check = 'X' AND so_pais IS INITIAL.
+    MESSAGE: TEXT-t02 TYPE 'E'.
+  ENDIF.
